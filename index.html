@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>For Asma</title>
+    <style>
+        html, body {
+            margin: 0; height: 100%; background: #000; overflow: hidden;
+            -webkit-user-select: none; user-select: none; touch-action: manipulation;
+        }
+        canvas { position: fixed; top: 0; left: 0; display: block; }
+        #stage {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            font-family: Arial, sans-serif; font-weight: bold; font-size: 25vmin;
+            color: #ff4fa3; text-shadow: 0 0 20px #ff4fa3; z-index: 2;
+            text-align: center; padding: 0 4vmin; box-sizing: border-box;
+        }
+
+        /* ---------- Quiz ---------- */
+        #quiz {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(0, 0, 20, 0.88); z-index: 5;
+        }
+        #quizCard {
+            width: 84vmin; max-width: 92%; box-sizing: border-box;
+            background: #fff0f5; border-radius: 4vmin; padding: 5vmin;
+            text-align: center; font-family: Arial, sans-serif;
+            box-shadow: 0 0 25px rgba(255, 80, 160, 0.7);
+        }
+        #qCount { font-size: 3.6vmin; color: #b05a7c; margin-bottom: 2vmin; }
+        #qText { font-size: 5.6vmin; font-weight: bold; color: #e0457b; margin-bottom: 3.5vmin; }
+        .opt {
+            display: block; width: 100%; box-sizing: border-box;
+            font-size: 4.8vmin; padding: 2.2vmin 3vmin; margin-bottom: 2vmin;
+            border: 0.5vmin solid #e0457b; border-radius: 3vmin;
+            background: #fff; color: #d63b78; cursor: pointer; font-weight: bold;
+        }
+        .opt.correct { background: #5ad48a; border-color: #2e9e5b; color: #fff; }
+        .opt.wrong   { background: #ff6b81; border-color: #d63348; color: #fff; }
+        #quizDone { display: none; }
+        #quizDone .big { font-size: 7vmin; font-weight: bold; color: #e0457b; margin-bottom: 2.5vmin; }
+        #quizDone .msg {
+            font-family: 'Brush Script MT', 'Segoe Script', cursive;
+            font-size: 5.2vmin; line-height: 1.35; color: #d63b78; margin-bottom: 4vmin;
+        }
+        #quizDone button, #resultCard button {
+            font-size: 4.5vmin; padding: 2vmin 5vmin; border: none; border-radius: 3vmin;
+            background: #e0457b; color: #fff; cursor: pointer; font-weight: bold;
+        }
+
+        /* ---------- Heart game ---------- */
+        #game {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; z-index: 5; overflow: hidden;
+            background: rgba(0, 0, 20, 0.55);
+        }
+        #hud {
+            position: absolute; top: 2vmin; left: 0; width: 100%;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 4vmin; box-sizing: border-box;
+            font-family: Arial, sans-serif; font-weight: bold;
+            font-size: 5vmin; color: #ff9ccc;
+            z-index: 3; pointer-events: none;
+        }
+        #hint { font-size: 3.6vmin; color: #fff; text-align: center; }
+        .heart {
+            position: absolute; top: -14vmin; line-height: 1; cursor: pointer;
+            font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+            animation-name: fall; animation-timing-function: linear;
+            animation-fill-mode: forwards;
+        }
+        @keyframes fall {
+            from { transform: translateY(0); }
+            to   { transform: translateY(125vh); }
+        }
+        .burst {
+            position: absolute; font-family: Arial, sans-serif;
+            font-weight: bold; font-size: 6vmin; pointer-events: none;
+            animation: rise 0.7s ease-out forwards;
+        }
+        @keyframes rise {
+            from { opacity: 1; transform: translateY(0); }
+            to   { opacity: 0; transform: translateY(-9vmin); }
+        }
+
+        /* ---------- Result card ---------- */
+        #result {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(0, 0, 20, 0.85); z-index: 6;
+        }
+        #resultCard {
+            width: 84vmin; max-width: 92%; box-sizing: border-box;
+            background: #fff0f5; border-radius: 4vmin; padding: 5vmin;
+            text-align: center; font-family: Arial, sans-serif;
+            box-shadow: 0 0 25px rgba(255, 80, 160, 0.7);
+        }
+        #resultCard .big { font-size: 6.5vmin; font-weight: bold; color: #e0457b; margin-bottom: 3vmin; }
+        #resultCard .msg {
+            font-family: 'Brush Script MT', 'Segoe Script', cursive;
+            font-size: 5vmin; line-height: 1.35; color: #d63b78; margin-bottom: 4vmin;
+        }
+    </style>
+</head>
+<body>
+<canvas id="rain"></canvas>
+<div id="stage"></div>
+
+<div id="quiz">
+    <div id="quizCard">
+        <div id="quizBody">
+            <div id="qCount"></div>
+            <div id="qText"></div>
+            <div id="qOptions"></div>
+        </div>
+        <div id="quizDone">
+            <div class="big" id="quizScoreText"></div>
+            <div class="msg" id="quizMsg"></div>
+            <button id="toGameBtn">Play the heart game &#x1F497;</button>
+        </div>
+    </div>
+</div>
+
+<div id="game">
+    <div id="hud">
+        <div id="scoreBox"></div>
+        <div id="hint"></div>
+        <div id="timeBox"></div>
+    </div>
+</div>
+
+<div id="result">
+    <div id="resultCard">
+        <div class="big">You scored <span id="finalScore">0</span> &#x1F497;</div>
+        <div class="msg">Asma, thank you for being the best sister in the world. Love you always!</div>
+        <button id="againBtn">Play again</button>
+    </div>
+</div>
+
+<script>
+    // ---------- Letter rain ----------
+    const canvas = document.getElementById('rain');
+    const ctx = canvas.getContext('2d');
+    const letters = 'ASMASISTER'.split('');
+    const fontSize = 16;
+    let drops = [];
+
+    function setup() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        drops = [];
+        const columns = Math.floor(canvas.width / fontSize);
+        for (let i = 0; i < columns; i++) {
+            drops.push(Math.random() * -50);
+        }
+    }
+    setup();
+    window.addEventListener('resize', setup);
+
+    function drawRain() {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#ff2d8f';
+        ctx.font = fontSize + 'px monospace';
+        for (let i = 0; i < drops.length; i++) {
+            const ch = letters[Math.floor(Math.random() * letters.length)];
+            ctx.fillText(ch, i * fontSize, drops[i] * fontSize);
+            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                drops[i] = 0;
+            }
+            drops[i]++;
+        }
+    }
+    setInterval(drawRain, 50);
+
+    // ---------- Quiz ----------
+    const questions = [
+        { q: "What is Sahar's favorite color?",
+            options: ['Pink', 'Black', 'Blue'], answer: 1 },
+        { q: "What is Sahar's favorite food?",
+            options: ['Maggi', 'Pizza', 'Burger'], answer: 0 },
+        { q: "What is Sahar's favorite season?",
+            options: ['Summer', 'Spring', 'Winter'], answer: 2 },
+        { q: "What is Sahar's favorite animal?",
+            options: ['Dog', 'Cat', 'Rabbit'], answer: 1 },
+        { q: "What kind of movies does Sahar love?",
+            options: ['Romance', 'Comedy', 'Horror'], answer: 2 }
+    ];
+    let qIndex = 0;
+    let quizScore = 0;
+
+    function showQuestion() {
+        const item = questions[qIndex];
+        document.getElementById('qCount').textContent =
+            'Question ' + (qIndex + 1) + ' of ' + questions.length;
+        document.getElementById('qText').textContent = item.q;
+        const box = document.getElementById('qOptions');
+        box.innerHTML = '';
+        item.options.forEach(function (text, i) {
+            const b = document.createElement('button');
+            b.className = 'opt';
+            b.textContent = text;
+            b.addEventListener('click', function () { answerQuestion(i); });
+            box.appendChild(b);
+        });
+    }
+
+    function answerQuestion(i) {
+        const item = questions[qIndex];
+        const btns = document.querySelectorAll('#qOptions .opt');
+        btns.forEach(function (b) { b.disabled = true; });
+        btns[item.answer].classList.add('correct');
+        if (i === item.answer) {
+            quizScore++;
+        } else {
+            btns[i].classList.add('wrong');
+        }
+        setTimeout(function () {
+            qIndex++;
+            if (qIndex < questions.length) {
+                showQuestion();
+            } else {
+                finishQuiz();
+            }
+        }, 1300);
+    }
+
+    function finishQuiz() {
+        document.getElementById('quizBody').style.display = 'none';
+        document.getElementById('quizDone').style.display = 'block';
+        document.getElementById('quizScoreText').textContent =
+            'You got ' + quizScore + ' / ' + questions.length + ' ' + String.fromCodePoint(0x1F497);
+        let msg;
+        if (quizScore === questions.length) {
+            msg = 'Perfect! You know me better than anyone!';
+        } else if (quizScore >= 3) {
+            msg = 'So close! You know me really well!';
+        } else {
+            msg = 'Hmm... we need more sister time together!';
+        }
+        document.getElementById('quizMsg').textContent = msg;
+    }
+
+    function startQuiz() {
+        stage.textContent = '';
+        qIndex = 0;
+        quizScore = 0;
+        document.getElementById('quizBody').style.display = 'block';
+        document.getElementById('quizDone').style.display = 'none';
+        document.getElementById('quiz').style.display = 'flex';
+        showQuestion();
+    }
+
+    document.getElementById('toGameBtn').addEventListener('click', function () {
+        document.getElementById('quiz').style.display = 'none';
+        startGame();
+    });
+
+    // ---------- Heart game (hearts written as code numbers) ----------
+    const game = document.getElementById('game');
+    const pinkHeart = String.fromCodePoint(0x1F497);
+    const otherCodes = [0x1F499, 0x1F49A, 0x1F49B, 0x1F49C, 0x1F9E1, 0x1F5A4, 0x1F90D, 0x1F90E];
+    const otherHearts = otherCodes.map(function (cp) { return String.fromCodePoint(cp); });
+    otherHearts.push(String.fromCodePoint(0x2764, 0xFE0F));
+
+    let score = 0;
+    let timeLeft = 30;
+    let playing = false;
+    let spawnTimer = null;
+    let clockTimer = null;
+
+    function updateHud() {
+        document.getElementById('scoreBox').textContent = pinkHeart + ' ' + score;
+        document.getElementById('hint').textContent = 'Tap only ' + pinkHeart;
+        document.getElementById('timeBox').textContent = 'Time: ' + timeLeft;
+    }
+
+    function burst(h, text, color) {
+        const r = h.getBoundingClientRect();
+        const b = document.createElement('div');
+        b.className = 'burst';
+        b.textContent = text;
+        b.style.color = color;
+        b.style.left = r.left + 'px';
+        b.style.top = r.top + 'px';
+        game.appendChild(b);
+        setTimeout(function () { b.remove(); }, 700);
+    }
+
+    function spawnHeart() {
+        const isPink = Math.random() < 0.4;
+        const h = document.createElement('div');
+        h.className = 'heart';
+        h.textContent = isPink
+            ? pinkHeart
+            : otherHearts[Math.floor(Math.random() * otherHearts.length)];
+        h.style.left = (5 + Math.random() * 85) + '%';
+        h.style.fontSize = (9 + Math.random() * 5) + 'vmin';
+        h.style.animationDuration = (3 + Math.random() * 2.5) + 's';
+        h.addEventListener('pointerdown', function (e) {
+            e.preventDefault();
+            if (!playing || h.dataset.done) return;
+            h.dataset.done = '1';
+            if (isPink) {
+                score++;
+                burst(h, '+1', '#ffffff');
+            } else {
+                score = Math.max(0, score - 1);
+                burst(h, '-1', '#ff4d4d');
+            }
+            updateHud();
+            h.remove();
+        });
+        h.addEventListener('animationend', function () { h.remove(); });
+        game.appendChild(h);
+    }
+
+    function clearHearts() {
+        game.querySelectorAll('.heart').forEach(function (x) { x.remove(); });
+    }
+
+    function startGame() {
+        score = 0;
+        timeLeft = 30;
+        playing = true;
+        document.getElementById('result').style.display = 'none';
+        clearHearts();
+        updateHud();
+        game.style.display = 'block';
+        spawnTimer = setInterval(spawnHeart, 500);
+        clockTimer = setInterval(function () {
+            timeLeft--;
+            updateHud();
+            if (timeLeft <= 0) endGame();
+        }, 1000);
+    }
+
+    function endGame() {
+        playing = false;
+        clearInterval(spawnTimer);
+        clearInterval(clockTimer);
+        clearHearts();
+        document.getElementById('finalScore').textContent = score;
+        document.getElementById('result').style.display = 'flex';
+    }
+
+    document.getElementById('againBtn').addEventListener('click', startGame);
+
+    // ---------- Countdown + words ----------
+    const stage = document.getElementById('stage');
+    const steps = [
+        { text: '3',          size: '25vmin', delay: 1000 },
+        { text: '2',          size: '25vmin', delay: 1000 },
+        { text: '1',          size: '25vmin', delay: 1000 },
+        { text: 'Hey',        size: '14vmin', delay: 1300 },
+        { text: 'ASMA',       size: '20vmin', delay: 1800 },
+        { text: 'Quiz time!', size: '12vmin', delay: 1800 }
+    ];
+    let index = 0;
+
+    function showNext() {
+        if (index < steps.length) {
+            stage.style.fontSize = steps[index].size;
+            stage.textContent = steps[index].text;
+            const wait = steps[index].delay;
+            index++;
+            setTimeout(showNext, wait);
+        } else {
+            startQuiz();
+        }
+    }
+    showNext();
+</script>
+</body>
+</html>
